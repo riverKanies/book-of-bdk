@@ -6,12 +6,7 @@ cache/
 dist/
 drafts/
 target/
-
-# Tests
-tests/Cargo.lock
-tests/target
-tests/src
-tests/config.txt
+*Cargo.lock
 
 # Python virtual environments
 venv/

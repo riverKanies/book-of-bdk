@@ -54,3 +54,6 @@ mkShell {
   ];
 }
 ```
+
+### rust-analyzer vscode extention
+To enable rust-analyzer features for a rust example in the project you must add the path to the `Cargo.toml` file for the example to `.vscode/settings.json`

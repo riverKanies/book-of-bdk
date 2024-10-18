@@ -3,11 +3,11 @@
 !!! tip
     This page is up-to-date with version `1.0.0-beta.1` of `bdk_wallet`.
 
-Add BDK
+### Add BDK to Your Project
 
 === "Rust"
 
-    ``` toml
+    ``` toml title="Cargo.toml"
     [dependencies]
     bdk_wallet = { version = "1.0.0-beta.1", features = ["keys-bip39"] }
     bdk_esplora = {  version = "0.16.0" , features = ["blocking"] }
@@ -35,7 +35,7 @@ Add BDK
     }
     ```
 
-Create Wallet Mnemonic
+### Create Wallet Mnemonic
 
 === "Rust"
 
@@ -57,7 +57,10 @@ Create Wallet Mnemonic
     val mnemonic = Mnemonic(WordCount.WORDS12)
     ```
 
-Create Wallet
+To create a wallet we will need a private key. First we will generate a mnemonic 12 word seed phrase which can be used to generate a private key and recover the wallet at any time.
+
+
+### Create Wallet
 
 === "Rust"
 
@@ -127,7 +130,9 @@ Create Wallet
     )
     ```
 
-Get Address
+With our seeds we can generate our private key, which we can then use to instantiate descriptors (one to generate invoice payments and one to generate addresses for us to send change back to ourselves). We can then create a wallet defined by these descriptors.
+
+### Get Address
 
 === "Rust"
 
@@ -147,7 +152,9 @@ Get Address
     val addressInfo = wallet.revealNextAddress(KeychainKind.EXTERNAL)
     ```
 
-Get Balance
+With our wallet set up we can create invoice addresses where people can pay us. With HD wallet functionality we can generate a different address for each payment to improve privacy.
+
+### Sync and Get Balance
 
 === "Rust"
 
@@ -191,3 +198,5 @@ Get Balance
     wallet.applyUpdate(update)
     val balance = wallet.balance()
     ```
+
+We can now connect to a blockchain client to fetch the UTXO set to see the funds our wallet has access to.

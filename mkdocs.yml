@@ -97,6 +97,7 @@ nav:
     - Keys and Descriptors:
       - Creating Descriptors: cookbook/keys-descriptors/descriptors.md
       - Seed Phrase to Descriptors: cookbook/keys-descriptors/seed-phrase.md
+    - WASM: cookbook/wasm.md
   - Architecture:
     - Overview:
       - Design: architecture/design.md

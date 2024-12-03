@@ -1,10 +1,6 @@
-import { __wbg_set_wasm, WalletWrapper, greet } from '../rust/pkg/bdk_wasm_bg.js';
-import * as wasm from '../rust/pkg/bdk_wasm_bg.wasm';
+import {  WalletWrapper, greet } from '../rust/pkg';
 
-async function run() {
-    // Initialize WASM
-    __wbg_set_wasm(wasm);
-    
+async function run() {    
     console.log(greet()); // Should print "Hello, bdk-wasm!"
     
     // Test wallet creation

@@ -137,9 +137,35 @@ impl WalletWrapper {
         address.to_string()
     }
 
+    #[wasm_bindgen]
+    pub fn load(changeset: JsValue, url: &str) -> JsResult<WalletWrapper> {
+        console::log_1(&format!("Loading wallet from changeset: {:?}", changeset).into());
+        
+        // Add explicit type annotation and error handling for deserialization
+        let changeset: ChangeSet = from_value(changeset)
+            .map_err(|e| JsError::new(&format!("Failed to deserialize changeset: {}", e)))?;
+            
+        let wallet_opt = Wallet::load()
+            .load_wallet_no_persist(changeset)
+            .map_err(|e| JsError::new(&format!("Failed to load wallet: {}", e)))?;
+
+        let wallet = match wallet_opt {
+            Some(wallet) => wallet,
+            None => return Err(JsError::new("Failed to load wallet, check the changeset")),
+        };
+
+        let client = esplora_client::Builder::new(url)
+            .build_async()
+            .map_err(|e| JsError::new(&format!("Failed to create client: {}", e)))?;
+
+        Ok(WalletWrapper { wallet, client })
+    }
+
     pub fn take_staged(&mut self) -> JsResult<JsValue> {
         match self.wallet.take_staged() {
-            Some(changeset) => Ok(to_value(&changeset)?),
+            Some(changeset) => {
+                Ok(to_value(&changeset)?)
+            }
             None => Ok(JsValue::null()),
         }
     }

@@ -25,27 +25,31 @@ async function run() {
     const staged = wallet.take_staged();
     console.log("Staged:", staged);
 
-    console.log("New address:", wallet.get_new_address());
+    const loaded = WalletWrapper.load(staged, "https://mutinynet.com/api");
+    console.log("Loaded:", loaded);
+    // console.log("Balance (Loaded):", loaded.balance());
+
+    // console.log("New address (Loaded):", loaded.get_new_address());
+
+    // const staged2 = wallet.take_staged();
+    // console.log("Staged2:", staged2);
+
+
+    // console.log("New address:", wallet.get_new_address());
+
+    // const merged = wallet.take_merged(staged);
+    // console.log("Merged:", merged);
+
+    // const staged3 = wallet.take_staged();
+    // console.log("Staged3:", staged3);
+
+    // // --8<-- [start:utils]
+    // // Test balance
+    // console.log("Balance:", wallet.balance());
     
-    const staged2 = wallet.take_staged();
-    console.log("Staged2:", staged2);
-
-
-    console.log("New address:", wallet.get_new_address());
-
-    const merged = wallet.take_merged(staged);
-    console.log("Merged:", merged);
-
-    const staged3 = wallet.take_staged();
-    console.log("Staged3:", staged3);
-
-    // --8<-- [start:utils]
-    // Test balance
-    console.log("Balance:", wallet.balance());
-    
-    // Test address generation
-    console.log("New address:", wallet.get_new_address());
-    // --8<-- [end:utils]
+    // // Test address generation
+    // console.log("New address:", wallet.get_new_address());
+    // // --8<-- [end:utils]
 }
 
 run().catch(console.error);

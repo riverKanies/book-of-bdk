@@ -6,12 +6,15 @@ use bdk_esplora::{
     esplora_client::{self, AsyncClient},
     EsploraAsyncExt,
 };
-use bdk_wallet::{bitcoin::Network, ChangeSet, KeychainKind, Wallet};
+use bdk_wallet::{chain::Merge, bitcoin::Network, ChangeSet, KeychainKind, Wallet};
 use js_sys::Date;
 use wasm_bindgen::prelude::*;
+use serde_wasm_bindgen::{from_value, to_value};
 use web_sys::console;
 
 const PARALLEL_REQUESTS: usize = 1;
+
+pub type JsResult<T> = Result<T, JsError>;
 
 #[wasm_bindgen]
 extern "C" {}
@@ -23,8 +26,8 @@ pub fn greet() -> String {
 
 #[wasm_bindgen]
 pub struct WalletWrapper {
-    wallet: Rc<RefCell<Wallet>>,
-    client: Rc<RefCell<AsyncClient>>,
+    wallet: Wallet,
+    client: AsyncClient,
 }
 
 #[wasm_bindgen]
@@ -68,19 +71,19 @@ impl WalletWrapper {
             .map_err(|e| format!("{:?}", e))?;
 
         Ok(WalletWrapper {
-            wallet: Rc::new(RefCell::new(wallet)),
-            client: Rc::new(RefCell::new(client)),
+            wallet: wallet,
+            client: client,
         })
     }
     // --8<-- [end:new]
 
     // --8<-- [start:scan]
     #[wasm_bindgen]
-    pub async fn sync(&self, stop_gap: usize) -> Result<(), String> {
-        let wallet = Rc::clone(&self.wallet);
-        let client = Rc::clone(&self.client);
+    pub async fn sync(&mut self, stop_gap: usize) -> Result<(), String> {
+        let wallet = &mut self.wallet;
+        let client = &self.client;
 
-        let request = wallet.borrow().start_full_scan().inspect({
+        let request = wallet.start_full_scan().inspect({
             let mut stdout = std::io::stdout();
             let mut once = BTreeSet::<KeychainKind>::new();
             move |keychain, spk_i, _| {
@@ -93,14 +96,12 @@ impl WalletWrapper {
         });
 
         let update = client
-            .borrow()
             .full_scan(request, stop_gap, PARALLEL_REQUESTS)
             .await
             .map_err(|e| format!("{:?}", e))?;
 
         let now = (Date::now() / 1000.0) as u64;
         wallet
-            .borrow_mut()
             .apply_update_at(update, Some(now))
             .map_err(|e| format!("{:?}", e))?;
 
@@ -113,15 +114,14 @@ impl WalletWrapper {
     // --8<-- [start:utils]
     #[wasm_bindgen]
     pub fn balance(&self) -> u64 {
-        let balance = self.wallet.borrow().balance();
+        let balance = self.wallet.balance();
         balance.total().to_sat()
     }
 
     #[wasm_bindgen]
-    pub fn get_new_address(&self) -> String {
+    pub fn get_new_address(&mut self) -> String {
         let address = self
             .wallet
-            .borrow_mut()
             .next_unused_address(KeychainKind::External);
 
         address.to_string()
@@ -129,12 +129,29 @@ impl WalletWrapper {
     // --8<-- [end:utils]
 
     #[wasm_bindgen]
-    pub fn peek_address(&self, index: u32) -> String {
+    pub fn peek_address(&mut self, index: u32) -> String {
         let address = self
             .wallet
-            .borrow_mut()
             .peek_address(KeychainKind::External, index);
 
         address.to_string()
+    }
+
+    pub fn take_staged(&mut self) -> JsResult<JsValue> {
+        match self.wallet.take_staged() {
+            Some(changeset) => Ok(to_value(&changeset)?),
+            None => Ok(JsValue::null()),
+        }
+    }
+
+    pub fn take_merged(&mut self, previous: JsValue) -> JsResult<JsValue> {
+        match self.wallet.take_staged() {
+            Some(curr_changeset) => {
+                let mut changeset: ChangeSet = from_value(previous)?;
+                changeset.merge(curr_changeset);
+                Ok(to_value(&changeset)?)
+            }
+            None => Ok(JsValue::null()),
+        }
     }
 }

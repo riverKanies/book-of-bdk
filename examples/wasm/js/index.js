@@ -21,7 +21,24 @@ async function run() {
     // Test sync
     await wallet.sync(2);
     // --8<-- [end:scan]
+
+    const staged = wallet.take_staged();
+    console.log("Staged:", staged);
+
+    console.log("New address:", wallet.get_new_address());
     
+    const staged2 = wallet.take_staged();
+    console.log("Staged2:", staged2);
+
+
+    console.log("New address:", wallet.get_new_address());
+
+    const merged = wallet.take_merged(staged);
+    console.log("Merged:", merged);
+
+    const staged3 = wallet.take_staged();
+    console.log("Staged3:", staged3);
+
     // --8<-- [start:utils]
     // Test balance
     console.log("Balance:", wallet.balance());

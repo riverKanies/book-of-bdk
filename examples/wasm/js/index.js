@@ -3,6 +3,10 @@ import {  WalletWrapper, greet } from '../rust/pkg';
 // needed to handle js Map serialization
 const Store = {
     save: data => {
+        if (!data) {
+            console.log("No data to save");
+            return;
+        }
         const serializedStaged = JSON.stringify(data, (key, value) => {
             if (value instanceof Map) {
                 return {
@@ -52,7 +56,7 @@ async function run() {
         console.log("Performing Full Scan");
         // --8<-- [start:scan]
         // Test sync
-        await wallet.sync(2);
+        await wallet.scan(2);
         // --8<-- [end:scan]
 
 
@@ -66,7 +70,7 @@ async function run() {
     } else {
         console.log("Loading wallet from local storage");
         
-        localStorage.removeItem("walletData");
+        // localStorage.removeItem("walletData");
 
         // Make sure to parse the walletData with Map conversion here too
         const loaded = WalletWrapper.load(
@@ -77,14 +81,25 @@ async function run() {
         );
 
         console.log("Loaded:", loaded);
+
+        console.log("Syncing...");
+        await loaded.sync(2);
+        
         console.log("Balance (Loaded):", loaded.balance());
 
         const merged = loaded.take_merged(walletData);
         console.log("Merged:", merged);
 
         console.log("New address (Loaded):", loaded.get_new_address());
-        const merged2 = loaded.take_merged(walletData);
-        console.log("Merged2:", merged2);
+
+        const staged = loaded.take_staged();
+        console.log("Staged:", staged);
+
+        // const merged2 = loaded.take_merged(walletData);
+        // console.log("Merged2:", merged2);
+
+        // Store.save(merged2);
+        // console.log("new address saved");
     }
 
     // // --8<-- [start:utils]

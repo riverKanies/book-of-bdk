@@ -78,7 +78,7 @@ impl WalletWrapper {
     // --8<-- [end:new]
 
     // --8<-- [start:scan]
-    pub async fn sync(&mut self, stop_gap: usize) -> Result<(), String> {
+    pub async fn scan(&mut self, stop_gap: usize) -> Result<(), String> {
         let wallet = &mut self.wallet;
         let client = &self.client;
 
@@ -105,6 +105,16 @@ impl WalletWrapper {
             .map_err(|e| format!("{:?}", e))?;
 
         console::log_1(&"after apply".into());
+
+        Ok(())
+    }
+
+    pub async fn sync(&mut self, parallel_requests: usize) -> JsResult<()> {
+        let request = self.wallet.start_sync_with_revealed_spks();
+        let update = self.client.sync(request, parallel_requests).await?;
+
+        let now = (Date::now() / 1000.0) as u64;
+        self.wallet.apply_update_at(update, Some(now))?;
 
         Ok(())
     }

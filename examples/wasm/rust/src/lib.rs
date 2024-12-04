@@ -78,7 +78,6 @@ impl WalletWrapper {
     // --8<-- [end:new]
 
     // --8<-- [start:scan]
-    #[wasm_bindgen]
     pub async fn sync(&mut self, stop_gap: usize) -> Result<(), String> {
         let wallet = &mut self.wallet;
         let client = &self.client;
@@ -112,13 +111,11 @@ impl WalletWrapper {
     // --8<-- [end:scan]
 
     // --8<-- [start:utils]
-    #[wasm_bindgen]
     pub fn balance(&self) -> u64 {
         let balance = self.wallet.balance();
         balance.total().to_sat()
     }
 
-    #[wasm_bindgen]
     pub fn get_new_address(&mut self) -> String {
         let address = self
             .wallet
@@ -128,7 +125,6 @@ impl WalletWrapper {
     }
     // --8<-- [end:utils]
 
-    #[wasm_bindgen]
     pub fn peek_address(&mut self, index: u32) -> String {
         let address = self
             .wallet
@@ -137,26 +133,22 @@ impl WalletWrapper {
         address.to_string()
     }
 
-    #[wasm_bindgen]
-    pub fn load(changeset: JsValue, url: &str) -> JsResult<WalletWrapper> {
-        console::log_1(&format!("Loading wallet from changeset: {:?}", changeset).into());
-        
-        // Add explicit type annotation and error handling for deserialization
-        let changeset: ChangeSet = from_value(changeset)
-            .map_err(|e| JsError::new(&format!("Failed to deserialize changeset: {}", e)))?;
-            
+    pub fn load(changeset: JsValue, url: &str, external_descriptor: &str, internal_descriptor: &str) -> JsResult<WalletWrapper> {
+        let changeset = from_value(changeset)?;
         let wallet_opt = Wallet::load()
-            .load_wallet_no_persist(changeset)
-            .map_err(|e| JsError::new(&format!("Failed to load wallet: {}", e)))?;
+            .descriptor(KeychainKind::External, Some(external_descriptor.to_string()))
+            .descriptor(KeychainKind::Internal, Some(internal_descriptor.to_string()))
+            .extract_keys()
+            .check_network(Network::Signet)
+            .load_wallet_no_persist(changeset)?;
+
 
         let wallet = match wallet_opt {
             Some(wallet) => wallet,
             None => return Err(JsError::new("Failed to load wallet, check the changeset")),
         };
 
-        let client = esplora_client::Builder::new(url)
-            .build_async()
-            .map_err(|e| JsError::new(&format!("Failed to create client: {}", e)))?;
+        let client = esplora_client::Builder::new(&url).build_async()?;
 
         Ok(WalletWrapper { wallet, client })
     }

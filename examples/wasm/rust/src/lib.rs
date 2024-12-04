@@ -1,7 +1,5 @@
 mod utils;
 
-use std::{cell::RefCell, collections::BTreeSet, io::Write, rc::Rc};
-
 use bdk_esplora::{
     esplora_client::{self, AsyncClient},
     EsploraAsyncExt,
@@ -10,7 +8,6 @@ use bdk_wallet::{chain::Merge, bitcoin::Network, ChangeSet, KeychainKind, Wallet
 use js_sys::Date;
 use wasm_bindgen::prelude::*;
 use serde_wasm_bindgen::{from_value, to_value};
-use web_sys::console;
 
 const PARALLEL_REQUESTS: usize = 1;
 
@@ -32,7 +29,7 @@ pub struct WalletWrapper {
 
 #[wasm_bindgen]
 impl WalletWrapper {
-    // --8<-- [start:new]
+    // --8<-- [start:wallet]
     #[wasm_bindgen(constructor)]
     pub fn new(
         network: String,
@@ -75,24 +72,31 @@ impl WalletWrapper {
             client: client,
         })
     }
-    // --8<-- [end:new]
 
-    // --8<-- [start:scan]
+    pub fn load(changeset: JsValue, url: &str, external_descriptor: &str, internal_descriptor: &str) -> JsResult<WalletWrapper> {
+        let changeset = from_value(changeset)?;
+        let wallet_opt = Wallet::load()
+            .descriptor(KeychainKind::External, Some(external_descriptor.to_string()))
+            .descriptor(KeychainKind::Internal, Some(internal_descriptor.to_string()))
+            .extract_keys()
+            .load_wallet_no_persist(changeset)?;
+
+
+        let wallet = match wallet_opt {
+            Some(wallet) => wallet,
+            None => return Err(JsError::new("Failed to load wallet, check the changeset")),
+        };
+
+        let client = esplora_client::Builder::new(&url).build_async()?;
+
+        Ok(WalletWrapper { wallet, client })
+    }
+
     pub async fn scan(&mut self, stop_gap: usize) -> Result<(), String> {
         let wallet = &mut self.wallet;
         let client = &self.client;
 
-        let request = wallet.start_full_scan().inspect({
-            let mut stdout = std::io::stdout();
-            let mut once = BTreeSet::<KeychainKind>::new();
-            move |keychain, spk_i, _| {
-                if once.insert(keychain) {
-                    console::log_1(&format!("\nScanning keychain [{:?}]", keychain).into());
-                }
-                console::log_1(&format!(" {:<3}", spk_i).into());
-                stdout.flush().expect("must flush")
-            }
-        });
+        let request = wallet.start_full_scan();
 
         let update = client
             .full_scan(request, stop_gap, PARALLEL_REQUESTS)
@@ -103,8 +107,6 @@ impl WalletWrapper {
         wallet
             .apply_update_at(update, Some(now))
             .map_err(|e| format!("{:?}", e))?;
-
-        console::log_1(&"after apply".into());
 
         Ok(())
     }
@@ -118,7 +120,7 @@ impl WalletWrapper {
 
         Ok(())
     }
-    // --8<-- [end:scan]
+    // --8<-- [end:wallet]
 
     // --8<-- [start:utils]
     pub fn balance(&self) -> u64 {
@@ -143,26 +145,7 @@ impl WalletWrapper {
         address.to_string()
     }
 
-    pub fn load(changeset: JsValue, url: &str, external_descriptor: &str, internal_descriptor: &str) -> JsResult<WalletWrapper> {
-        let changeset = from_value(changeset)?;
-        let wallet_opt = Wallet::load()
-            .descriptor(KeychainKind::External, Some(external_descriptor.to_string()))
-            .descriptor(KeychainKind::Internal, Some(internal_descriptor.to_string()))
-            .extract_keys()
-            .check_network(Network::Signet)
-            .load_wallet_no_persist(changeset)?;
-
-
-        let wallet = match wallet_opt {
-            Some(wallet) => wallet,
-            None => return Err(JsError::new("Failed to load wallet, check the changeset")),
-        };
-
-        let client = esplora_client::Builder::new(&url).build_async()?;
-
-        Ok(WalletWrapper { wallet, client })
-    }
-
+    // --8<-- [start:store]
     pub fn take_staged(&mut self) -> JsResult<JsValue> {
         match self.wallet.take_staged() {
             Some(changeset) => {
@@ -182,4 +165,5 @@ impl WalletWrapper {
             None => Ok(JsValue::null()),
         }
     }
+    // --8<-- [end:store]
 }

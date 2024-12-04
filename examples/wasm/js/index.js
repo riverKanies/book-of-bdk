@@ -92,14 +92,14 @@ async function run() {
 
         console.log("New address (Loaded):", loaded.get_new_address());
 
-        const staged = loaded.take_staged();
-        console.log("Staged:", staged);
+        // const staged = loaded.take_staged();
+        // console.log("Staged:", staged);
 
-        // const merged2 = loaded.take_merged(walletData);
-        // console.log("Merged2:", merged2);
+        const merged2 = loaded.take_merged(walletData);
+        console.log("Merged2:", merged2);
 
-        // Store.save(merged2);
-        // console.log("new address saved");
+        Store.save(merged2);
+        console.log("new address saved");
     }
 
     // // --8<-- [start:utils]

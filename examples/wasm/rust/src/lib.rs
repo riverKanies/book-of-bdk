@@ -129,7 +129,7 @@ impl WalletWrapper {
     pub fn get_new_address(&mut self) -> String {
         let address = self
             .wallet
-            .next_unused_address(KeychainKind::External);
+            .reveal_next_address(KeychainKind::External);
 
         address.to_string()
     }

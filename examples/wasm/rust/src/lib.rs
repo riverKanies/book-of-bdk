@@ -128,7 +128,7 @@ impl WalletWrapper {
         balance.total().to_sat()
     }
 
-    pub fn get_new_address(&mut self) -> String {
+    pub fn reveal_next_address(&mut self) -> String {
         let address = self
             .wallet
             .reveal_next_address(KeychainKind::External);

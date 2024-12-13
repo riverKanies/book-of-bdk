@@ -72,7 +72,7 @@ async function run() {
     console.log("Balance:", wallet.balance());
     
     // Test address generation
-    console.log("New address:", wallet.get_new_address());
+    console.log("New address:", wallet.reveal_next_address());
 
     // handle changeset merge on rust side
     const mergedDataString = wallet.take_merged(walletDataString);
